@@ -9,6 +9,7 @@
   "author": "REDTABLE",
   "license": "ISC",
   "dependencies": {
+    "axios": "^0.17.1",
     "express": "^4.16.2",
     "semantic-ui": "^2.2.13",
     "socket.io": "^2.0.4"

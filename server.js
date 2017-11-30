@@ -2,6 +2,8 @@ var express = require('express');
 var app = express();
 var http = require('http').Server(app);
 var io = require('socket.io')(http);
+var https = require('https');
+
 
 app.use('/semantic', express.static(__dirname + '/semantic'));
 app.use('/imgs', express.static(__dirname + '/imgs'));
@@ -33,24 +35,59 @@ io.on('connection', function(socket){
 
   socket.on('send message', function(data){
 
-    var msg;
-	var msgRT;
+  var msg;
+  var msgRT;
+  var msgRe;
 	var avatarNum = (data.userName % 4) + 1;
 
-	msg = '<div class="comment" style="text-align:right"><a class="avatar" style="float:right;"><img src="/imgs/avatar/'+ avatarNum +'.jpg"></a><div class="content" style="margin-left:0;margin-right:3.5em;"><a class="author">Client('+ socket.id +')</a><div class="metadata">';
+	msg = '<div class="comment" style="text-align:right"><a class="avatar" style="float:right;"><img src="/imgs/avatar/'+ avatarNum +'.jpg"></a><div class="content" style="margin-left:0;margin-right:3.5em;"><a class="author">Guest('+ socket.id +')</a><div class="metadata">';
 	msg += '<span class="date">'+ getTimeStamp() +'</span></div>'
 	msg += '<div class="text">'+ data.msg + '</div></div></div>';
 
     //console.log(msg);
-    io.sockets.in('channel'+ data.channelId).emit('receive message', msg);
-    //console.log('Channel No.:'+ data.channelId);
+    io.sockets.in('channel'+ data.channelId).emit('receive message', msg);   
+
+    if(data.initSet==''){
+      if(!(data.msg==1 || data.msg==2)){
+        msgRe = '1 (한식) 또는 2 (中餐)를 입력해 주세요.';
+      } else {
+        io.sockets.in('channel'+ data.channelId).emit('init set', data.msg); 
+        
+        //login API      
+        var url = "https://api.redtable.global/chatbot/userreg.php?user="+socket.id;
+  
+        var req = https.get(url, function(res) {
+          var bodyChunks = [];
+          res.on('data', function(chunk) {          
+            bodyChunks.push(chunk);
+          }).on('end', function() {
+            var body = Buffer.concat(bodyChunks);
+            body = JSON.parse(body);
+            
+            if(body.result=="OK"){
+              msgRe = '사용자 인증에 성공했습니다.';
+            } else {
+              msgRe = '사용자 인증에 실패했습니다.';
+            }
+  
+          })
+        });
+        
+        req.on('error', function(e) {
+          console.log('ERROR: ' + e.message);
+        });  
+      }
+    } else {
+              
+      
+    }
     
     setTimeout(apiResponse,500);    
 
     function apiResponse(){
 	  msgRT = '<div class="comment"><a class="avatar"><img src="/imgs/avatar/5.jpg"></a><div class="content"><a class="author">REDTABLE</a><div class="metadata">';
 	  msgRT += '<span class="date">'+ getTimeStamp() +'</span></div>'
-	  msgRT += '<div class="text"><a href="http://redtable.global">'+ data.msg +'에 대한 API 응답은 REDTABLE로 이동</a></div></div></div>';
+	  msgRT += '<div class="text">'+ msgRe +'</div></div></div>';
       io.sockets.in('channel'+ data.channelId).emit('receive message', msgRT);
     }
 
