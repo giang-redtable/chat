@@ -3,6 +3,7 @@ var app = express();
 var http = require('http').Server(app);
 var io = require('socket.io')(http);
 var https = require('https');
+var request = require('request');
 
 
 app.use('/semantic', express.static(__dirname + '/semantic'));
@@ -50,44 +51,91 @@ io.on('connection', function(socket){
     if(data.initSet==''){
       if(!(data.msg==1 || data.msg==2)){
         msgRe = '1 (한식) 또는 2 (中餐)를 입력해 주세요.';
+        apiResponse(msgRe);
       } else {
         io.sockets.in('channel'+ data.channelId).emit('init set', data.msg); 
+               
+        //login API
+
+        var url = "https://api.redtable.global/chatbot/userreg.php?user="+socket.id;        
+        var req = request({
+            url: url,
+            json: true
+        }, (error, response, body) => {
         
-        //login API      
-        var url = "https://api.redtable.global/chatbot/userreg.php?user="+socket.id;
-  
-        var req = https.get(url, function(res) {
-          var bodyChunks = [];
-          res.on('data', function(chunk) {          
-            bodyChunks.push(chunk);
-          }).on('end', function() {
-            var body = Buffer.concat(bodyChunks);
-            body = JSON.parse(body);
-            
-            if(body.result=="OK"){
-              msgRe = '사용자 인증에 성공했습니다.';
-            } else {
-              msgRe = '사용자 인증에 실패했습니다.';
+            if (!error && response.statusCode === 200) {
+                //console.log(body) // Print the json response
+                apiResponse('다음 메뉴 중 좋아하시는 메뉴를 선택하시면, 추천해드릴게요');                
+                setTimeout(()=>firstQuestion(data.msg),1000);
             }
-  
-          })
-        });
-        
-        req.on('error', function(e) {
-          console.log('ERROR: ' + e.message);
-        });  
+        })       
       }
     } else {
-              
-      
-    }
-    
-    setTimeout(apiResponse,500);    
+      lang = data.initSet == "1" ? "kr":"cn";
+      var url = "https://api.redtable.global/chatbot/recommend.php?user="+socket.id+"&method=sample&menu=kr06,kr05&index=0";
+      var retValue = '이런 메뉴는 어떠신가요? <br/>';
+      //console.log('baseCd: '+data.recomIdx);
+      //console.log('recomIdx: '+data.recomIdx);
 
-    function apiResponse(){
+      if(data.recomIdx==0) {
+        //첫 추천은 API call 50개의 추천 메뉴정보 가져옴
+        var req = request({
+            url: url,
+            json: true
+        }, (error, response, body) => {
+            io.sockets.in('channel'+ data.channelId).emit('pre data', body);  
+            //console.log(body);
+            if (!error && response.statusCode === 200) {
+                for(var i in body) {
+                  for(var j=data.recomIdx;j < Number(data.recomIdx)+3; j++) {                    
+                    retValue += body[i][j].name + '<br>';
+                  }
+                }
+                io.sockets.in('channel'+ data.channelId).emit('recom idx', Number(data.recomIdx)+3);  
+                apiResponse(retValue);
+            }
+        }) 
+      } else {
+        //console.log(data.preData);
+        var body = JSON.parse(data.preData);
+        for(var i in body) {
+          for(var j=data.recomIdx;j < Number(data.recomIdx)+3; j++) {                    
+            retValue += body[i][j].name + '<br>';
+          }
+        }
+        io.sockets.in('channel'+ data.channelId).emit('recom idx', Number(data.recomIdx)+3);  
+        apiResponse(retValue);
+      }
+    }
+
+    var firstQuestion = function(var1,callback) {
+      var lang;
+      var retValue = "";
+
+      lang = var1 == 1 ? "kr":"cn";
+      var url = "https://api.redtable.global/chatbot/sample.php?lang="+lang;
+      
+      var req = request({
+          url: url,
+          json: true
+      }, (error, response, body) => {
+      
+          if (!error && response.statusCode === 200) {
+              for(var i in body) {
+                for(var j in body[i]) {
+                  //retValue += '<input type="checkbox" name=chk'+j+'> ' + body[i][j].name + '<br>';             
+                  retValue += j +'. ' + body[i][j].name + '<br>';
+                }
+              }
+              apiResponse(retValue);
+          }
+      })     
+    }    
+    
+    function apiResponse(retMsg){   
 	  msgRT = '<div class="comment"><a class="avatar"><img src="/imgs/avatar/5.jpg"></a><div class="content"><a class="author">REDTABLE</a><div class="metadata">';
 	  msgRT += '<span class="date">'+ getTimeStamp() +'</span></div>'
-	  msgRT += '<div class="text">'+ msgRe +'</div></div></div>';
+	  msgRT += '<div class="text">'+ retMsg +'</div></div></div>';
       io.sockets.in('channel'+ data.channelId).emit('receive message', msgRT);
     }
 

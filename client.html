@@ -53,6 +53,9 @@
 	<input id="name" class="name" type="hidden" readonly>	
   <input id="channel" type="hidden" value=""/>
   <input id="initSet" type="hidden" value=""/>
+  <input id="baseCd" type="hidden" value=""/>
+  <input id="recomIdx" type="hidden" value="0"/>
+  <input id="preData" type="hidden" value=""/>
 	
 
 	<div class="ui fixed bottom borderless sticky action input" style="width:100%;">
@@ -75,7 +78,7 @@
       $('#channel').val(dateN);	 
 
       $('#chat').on('submit', function(e){
-        socket.emit('send message', { userName: $('#name').val(), msg: $('#message').val(), channelId: $('#channel').val(), initSet: $('#initSet').val() });
+        socket.emit('send message', { userName: $('#name').val(), msg: $('#message').val(), channelId: $('#channel').val(), initSet: $('#initSet').val(), baseCd: $('#baseCd').val(), recomIdx: $('#recomIdx').val(), preData: $('#preData').val() });
         $('#message').val("");
         $("#message").focus();
         e.preventDefault();
@@ -92,6 +95,16 @@
 
       socket.on('init set', function(initSet){
         $('#initSet').val(initSet);
+      });
+
+      socket.on('recom idx', function(recomIdx){        
+        $('#recomIdx').val(recomIdx);
+      });
+
+      socket.on('pre data', function(preData){
+        console.log(preData);
+        $('#preData').val(JSON.stringify(preData));
+        console.log($('#preData').val());
       });
 	
     </script>
