@@ -36,7 +36,9 @@
             메뉴 추천을 위한 정보를 어떤 음식으로 보여드릴까요?<br><br>
             <p>
             <a class="ui olive circular label">1</a> 한식&nbsp;&nbsp;
-            <a class="ui green circular label">2</a> 中餐<br>
+            <a class="ui green circular label">2</a> 中餐&nbsp;&nbsp;
+			<a class="ui olive circular label">3</a> jp&nbsp;&nbsp;
+            <a class="ui green circular label">4</a> en<br>
             </P>
             원하시는 번호를 입력해 주세요.<br>
 
@@ -56,7 +58,7 @@
   <input id="baseCd" type="hidden" value=""/>
   <input id="recomIdx" type="hidden" value="0"/>
   <input id="preData" type="hidden" value=""/>
-	
+	<input id="method" type="hidden" value=""/>
 
 	<div class="ui fixed bottom borderless sticky action input" style="width:100%;">
 		<input type="text" id="message" name="message">
@@ -78,7 +80,7 @@
       $('#channel').val(dateN);	 
 
       $('#chat').on('submit', function(e){
-        socket.emit('send message', { userName: $('#name').val(), msg: $('#message').val(), channelId: $('#channel').val(), initSet: $('#initSet').val(), baseCd: $('#baseCd').val(), recomIdx: $('#recomIdx').val(), preData: $('#preData').val() });
+        socket.emit('send message', { userName: $('#name').val(), msg: $('#message').val(), channelId: $('#channel').val(), initSet: $('#initSet').val(), baseCd: $('#baseCd').val(), recomIdx: $('#recomIdx').val(), preData: $('#preData').val(), method: $('#method').val() });
         $('#message').val("");
         $("#message").focus();
         e.preventDefault();
@@ -106,7 +108,17 @@
         $('#preData').val(JSON.stringify(preData));
         console.log($('#preData').val());
       });
-	
+	  
+	  socket.on('method', function(method){
+        console.log(method);
+        $('#method').val(method);
+      });
+
+	  socket.on('base cd', function(baseCd){
+        console.log(baseCd);
+        $('#baseCd').val(JSON.stringify(baseCd));
+        console.log($('#baseCd').val());
+      });
     </script>
 	
 	<script src="./semantic/dist/semantic.min.js"></script>
