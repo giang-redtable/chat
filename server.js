@@ -13,7 +13,85 @@ app.get('/',function(req, res){
   res.sendFile(__dirname + '/client.html');
 });
 
+var re_messages = [
+  {
+    cn:"如果您在西餐期间告诉我们您最喜爱的食物，我会推荐适合您的韩国食物。",
+    jp:"日本料理の中で、あなたが好きな食べ物を教えてあげると、あなたに ぴったりの韓国料理をお勧めいたします。",
+    en:"If you tell me your favorite food during Western food, I will recommend Korean food."
+  },
+  {
+    cn:"你喜欢 ",
+    jp:"あなたは ",
+    en:"Do you like "
+  },
+  {
+    cn:" 吗？",
+    jp:" が好きですか?",
+    en:" ?"
+  },
+  {
+    cn:"你喜欢这些菜单。",
+    jp:"あなたは、このようなメニューを好きね",
+    en:"You like these menus."
+  },
+  {
+    cn:"我们推荐与您最喜欢的菜单类似的韩国料理。",
+    jp:"あなたが好きなメニューと似ている韓国料理をお勧めします。",
+    en:"I recommend Korean dishes similar to your favorite menu."
+  },
+  {
+    cn:"这菜单看起来不错吗？",
+    jp:"このメニューは、美味しく見えるのか?",
+    en:"Does this menu look good?"
+  },
+  {
+    cn:"我可以介绍一家在首尔以烤肉闻名的餐厅吗?",
+    jp:"ソウルで焼肉で有名なレストランを紹介してできますか?",
+    en:"May I introduce you to a restaurant famous for bulgogi in Seoul?"
+  },
+  {
+    cn:"那么这个菜单怎么样?",
+    jp:"これにより、このメニューはいかがですか?",
+    en:"So how about this menu?"
+  },
 
+];
+
+var sample_menu =
+  {
+    cn01:{name:"麻辣烫", tag:"#火锅#火锅#涮锅#肉类#海鲜#汤#辣味"},
+    cn02:{name:"地三鮮", tag:"#茄子#土豆#灯笼椒#蔬菜#炒"},
+    cn03:{name:"烧茄子", tag:"#茄子#油炸#炒"},
+    cn04:{name:"煎饼", tag:"#煎饼#香肠#鸡蛋"},
+    cn05:{name:"北京烤鸭", tag:"#鸭#烟熏"},
+    cn06:{name:"魚香肉絲", tag:"#猪肉#炒#鱼香酱汁#辣味"},
+    cn07:{name:"回鍋肉", tag:"#猪肉#五花肉#炒#辣味"},
+    cn08:{name:"羊肉串", tag:"#羊肉#烤串#烧烤"},
+    cn09:{name:"鐵板牛肉", tag:"#牛肉#蔬菜#炒#铁板"},
+    cn10:{name:"宮保鸡丁", tag:"#鸡肉#花生#辣椒#炒#辣味"},
+
+    jp01:{name:"すき焼き", tag:"#牛肉#野菜#豆腐#寄せ鍋"},
+    jp02:{name:"天ぷら", tag:"#シーフード#魚#天ぷら"},    
+    jp03:{name:"寿司", tag:"#シーフード#魚#刺身#寿司"},
+    jp04:{name:"刺身", tag:"#魚#刺身"},
+    jp05:{name:"焼き鳥", tag:"#鶏肉#串刺し#焼き"},
+    jp06:{name:"トンカツ", tag:"#豚肉#天ぷら#トンカツ"},
+    jp07:{name:"しゃぶしゃぶ", tag:"#牛肉#豚肉#野菜#豆腐#しゃぶしゃぶ"},
+    jp08:{name:"そば", tag:"#麺#アイス#ソバ"},
+    jp09:{name:"うどん", tag:"#麺#うどん"},
+    jp10:{name:"ラーメン", tag:"#麺#豚肉"},
+
+    en01:{name:"Beef Steak", tag:"#Beef#Grilled#Steak"},
+    en02:{name:"Seafood Pasta", tag:"#Noodle#Seafood#Spicy#Pasta    "},
+    en03:{name:"Chicken Soup", tag:"#Chicken#Soup"},
+    en04:{name:"Oriental Salad", tag:"#Salad#Vegetables#SoySauce"},
+    en05:{name:"Fried Chicken", tag:"#Chicken#Fried"},
+    en06:{name:"Pizza", tag:"#Pizza#Cheese#Ham#Vegetables#Meat"},
+    en07:{name:"Risotto", tag:"#Rice#Vegetables#Seafood#Porridge"},
+    en08:{name:"Hamburger Steak", tag:"#Meat#Steak#Hamburger"},
+    en09:{name:"BBQ", tag:"#Beef#Pork#Sausage#Vegetables#Barbeque"},
+    en10:{name:"Stew", tag:"#Beef#Pork#Chicken#Vegetables#Stew"},
+  };
 
 var count=1;
 var connectionCount = 1
@@ -43,16 +121,22 @@ io.on('connection', function(socket){
 
 	msg = '<div class="comment" style="text-align:right"><a class="avatar" style="float:right;"><img src="/imgs/avatar/'+ avatarNum +'.jpg"></a><div class="content" style="margin-left:0;margin-right:3.5em;"><a class="author">Guest('+ socket.id +')</a><div class="metadata">';
 	msg += '<span class="date">'+ getTimeStamp() +'</span></div>'
-	msg += '<div class="text">'+ data.msg + '</div></div></div>';
+	msg += '<div class="text"><div class="speech-bubble2">'+ data.msg + '</div></div></div></div>';
     
     io.sockets.in('channel'+ data.channelId).emit('receive message', msg);   
 
     if(data.initSet==''){
       if(!(data.msg==1 || data.msg==2 || data.msg==3 || data.msg==4)){
-        msgRe = '1 (한식) 또는 2 (中餐)를 입력해 주세요.';
+        msgRe = 'Please input number between 1 and 3.';
         apiResponse(msgRe);
       } else {
-        io.sockets.in('channel'+ data.channelId).emit('init set', data.msg); 
+
+        lang = "cn";
+        if (data.msg == "1") { lang = "cn" }
+        else if (data.msg == "2") { lang = "jp" }
+        else if (data.msg == "3") { lang = "en" }
+
+        io.sockets.in('channel'+ data.channelId).emit('init set', lang); 
                
         //login API
 
@@ -63,8 +147,8 @@ io.on('connection', function(socket){
         }, (error, response, body) => {
         
             if (!error && response.statusCode === 200) {
-                apiResponse('지금부터 몇개의 메뉴를 보여드릴거에요 마음에 드시면 "Y" 아니시면 "N"을 입력해 주세요.');                
-                setTimeout(()=>firstQuestion(data.msg),1000);
+                apiResponse(re_messages[0][lang]);                
+                setTimeout(()=>firstQuestion(lang),1000);
             }
         })
       }
@@ -73,11 +157,8 @@ io.on('connection', function(socket){
     var sampleData = JSON.parse(data.sampleData);      
     var sampleSelect = JSON.parse(data.sampleSelect);  
     
-    lang = "kr";
-	  if (data.initSet == "2") { lang = "cn" }
-	  else if (data.initSet == "3") { lang = "jp" }
-    else if (data.initSet == "4") { lang = "en" }
-    
+    lang = data.initSet;
+
     if(sampleData.length > 0) { //Sample data 남아있을 경우 계속 보여주면서  N일 경우 해당code pop
 
       if(data.msg==="n" || data.msg==="N" || data.msg==="no" || data.msg==="No") {
@@ -97,8 +178,22 @@ io.on('connection', function(socket){
         var preData = JSON.parse(data.preData);      
       }
 
-      var retValue = '<h5>이런 메뉴는 어떠신가요? (Y/N)</h5>';
-      var msg = data.msg;
+      //
+      var retValue = '';
+
+      if(sampleSelect.length > 0 && data.recomIdx==0){
+        
+        retValue += re_messages[3][lang]+'<br/>';
+
+        for (var i = 0; i < sampleSelect.length; i++) {
+          retValue += '<h5>'+sample_menu[sampleSelect[i]].name +'</h5>'+ '('+ sample_menu[sampleSelect[i]].tag +')'+'<br/>';
+        }        
+        apiResponse(retValue);
+      }
+      
+
+      retValue = '<h5>'+ re_messages[4][lang] +'</h5>';
+      var msg = data.msg.toUpperCase();
       //var preData = JSON.parse(data.preData);      
 
       if(data.recomIdx==0) {
@@ -125,18 +220,22 @@ io.on('connection', function(socket){
               
           //console.log(body);
               if (!error && response.statusCode === 200) {            
-                  retValue += body.result[0].name + '<br>';
-                  io.sockets.in('channel'+ data.channelId).emit('recom idx', 1);
-                  apiResponse(retValue);
+                  
+                retValue += '<h5>'+ body.result[0].name + '</h5>' + '('+ body.result[0].tag +')<br/><br/>';
+                retValue += '<h5>'+ re_messages[5][lang] + ' (Yes or No)</h5>';
+
+                io.sockets.in('channel'+ data.channelId).emit('recom idx', 1);
+                io.sockets.in('channel'+ data.channelId).emit('recom keyword', body.result[0].name);
+                apiResponse(retValue);
               }
           })
         } else {        
       
-      if (msg == "y") {
-        //메뉴 선택
-        var url = "https://api.redtable.global/v3/restaurant_partner.php?city=seoul&search=초밥";
-        retValue = '<h5>선택하신 메뉴를 판매하는 레스토랑 정보를 드릴까요?</h5>';
-        retValue += '<a class="ui button blue">Yes</a> or <a class="ui button red">No</a>?';     
+      if (msg == "Y" || msg == 'YES') {
+        //메뉴 선택 Yes일 경우
+        var url = "http://redtable.global/search.php?w="+ data.recomKeyword +"&city=seoul&lang="+lang+"&srch_type=R";
+        retValue = '<h5>'+ re_messages[6][lang] +'</h5>';
+        retValue += '<a href="'+url+'" class="ui blue button" target="_blank">Yes</a> or <a href="javascript:answerNo();" class="ui red button">No</a>?';     
         apiResponse(retValue);
 
       } else if (data.recomIdx == 0) {
@@ -160,14 +259,19 @@ io.on('connection', function(socket){
       } else {
             if(data.recomIdx % 50==0){
               retValue = '<h5>추천 메뉴가 마음에 안드시면 처음부터 다시 진행하시겠습니까?</h5>';
-              retValue += '<a class="ui button blue">Yes</a> or <a class="ui button red">No</a>?';           
+              retValue += '<strong>Yes</strong> or <strong>No</strong>?';           
             } else {
-              var arrData = preData.shift();
-              //retValue += preData[data.recomIdx % 50].name + '<br>';
-              retValue += arrData.name + '<br>';
+              //추천메뉴에 대해 No일 경우 다음 메뉴 추천
+              
+              var arrData = preData.shift();             
+
+              retValue = '<h5>'+ arrData.name + '</h5>' + '('+ arrData.tag +')<br/><br/>';
+              retValue += '<h5>'+ re_messages[7][lang] + ' (Yes or No)</h5>';
+              io.sockets.in('channel'+ data.channelId).emit('recom keyword', arrData.name);
             }
             io.sockets.in('channel'+ data.channelId).emit('pre data', preData);
             io.sockets.in('channel'+ data.channelId).emit('recom idx', data.recomIdx + 1);
+            
             apiResponse(retValue);
       }
         }
@@ -180,10 +284,7 @@ io.on('connection', function(socket){
       var arrData = "";
       var sampleSelect = [];
 
-      lang = "kr";
-      if (var1 == 2) { lang = "cn" }
-      else if (var1 == 3) { lang = "jp" }
-	    else if (var1 == 4) { lang = "en" }
+      lang = var1;      
       
       var url = "https://api.redtable.global/chatbot/sample.php?lang="+lang;
       
@@ -198,7 +299,8 @@ io.on('connection', function(socket){
             sampleSelect = [arrData.code];
 
             retValue = '<img src="/imgs/'+ arrData.code +'.png" />';
-            retValue += '<h3>'+ arrData.name + '</h3> <a class="ui button blue">Yes</a> or <a class="ui button red">No</a>?';            
+            
+            retValue += '<h4>'+ re_messages[1][lang] + arrData.name + '('+ sample_menu[arrData.code].tag +')'+ re_messages[2][lang] + '</h4> <strong>Yes</strong> or <strong>No</strong>?';            
             
             io.sockets.in('channel'+ data.channelId).emit('sample data', body.result);
             io.sockets.in('channel'+ data.channelId).emit('sample select', sampleSelect);
@@ -216,7 +318,7 @@ io.on('connection', function(socket){
     var2.push(arrData.code);        
 
     retValue = '<img src="/imgs/'+ arrData.code +'.png"/>';
-    retValue += '<h3>'+ arrData.name + '</h3> <a class="ui button blue">Yes</a> or <a class="ui button red">No</a>?';     
+    retValue += '<h4>'+ re_messages[1][lang] + arrData.name + '('+ sample_menu[arrData.code].tag +')'+ re_messages[2][lang] + '</h4> <strong>Yes</strong> or <strong>No</strong>?';     
 
     io.sockets.in('channel'+ data.channelId).emit('sample data', var1);
     io.sockets.in('channel'+ data.channelId).emit('sample select', var2);
@@ -247,9 +349,9 @@ io.on('connection', function(socket){
     }
     
     function apiResponse(retMsg){   
-	  msgRT = '<div class="comment"><a class="avatar"><img src="/imgs/avatar/5.jpg"></a><div class="content"><a class="author">REDTABLE</a><div class="metadata">';
-	  msgRT += '<span class="date">'+ getTimeStamp() +'</span></div>'
-	  msgRT += '<div class="text">'+ retMsg +'</div></div></div>';
+      msgRT = '<div class="comment"><a class="avatar"><img src="/imgs/avatar/5.jpg"></a><div class="content"><a class="author">REDTABLE</a><div class="metadata">';
+      msgRT += '<span class="date">'+ getTimeStamp() +'</span></div>';
+      msgRT += '<div class="text"><div class="speech-bubble">'+ retMsg +'</div></div></div></div>';
       io.sockets.in('channel'+ data.channelId).emit('receive message', msgRT);
     }
 

@@ -8,17 +8,22 @@
 
 <style>
 .name{ width: 10%; }
-.message{ width: 90%; }
+.message{ width: 80%; }
 .chat{ width: 10%; }
+.speech-bubble { position: relative;background: #FFFFFF;border-radius: .5em;padding:15px; }
+.speech-bubble:after { content: '';position: absolute;left: 0;top: 50%;width: 0;height: 0;border: 13px solid transparent;border-right-color: #FFFFFF;border-left: 0;border-top: 0;margin-top: -6.5px;margin-left: -13px; }
+.speech-bubble2 {	position: relative;background: #FFFFFF;border-radius: .5em;padding:15px; }
+.speech-bubble2:after {	content: '';position: absolute;right: 0;top: 50%;width: 0;height: 0;border: 13px solid transparent;border-left-color: #FFFFFF;border-right: 0;border-top: 0;margin-top: -6.5px;margin-right: -13px; }
 </style>
 
 </head>
 <body style="background-image: url('/imgs/bg.png');">
 <div class="container">
-	<div class="ui fixed red borderless inverted menu" style="border-radius: 0px;"><h4 class="header item">REDTABLE CHATBOT v0.1</h4></div>
+	<div class="ui fixed red borderless inverted menu" style="border-radius: 0px;float:left;"><h4 class="header item">REDTABLE CHATBOT v0.1</h4></div>
 	<!-- Chat log -->
-    <div style="overflow-x: hidden; overflow-y: auto;padding:0px 15px 140px 15px;" id="chatLog" class="ui comments">
-      <div class="ui icon small message" style="margin-top:50px;">
+    <div id="chatLog"  class="ui comments" style="overflow-x: hidden; overflow-y: auto;padding:50px 15px 40px 15px;">
+      
+      <div class="ui icon small message">
         <i class="comments outline icon"></i>
         <div class="content">
         <div class="header">
@@ -33,14 +38,15 @@
         <div class="content"><a class="author">REDTABLE</a>
           <div class="metadata"><span class="date"></span></div>
           <div class="text">
-            메뉴 추천을 위한 정보를 어떤 음식으로 보여드릴까요?<br><br>
-            <p>
-            <a class="ui olive circular label">1</a> 한식&nbsp;&nbsp;
-            <a class="ui green circular label">2</a> 中餐&nbsp;&nbsp;
-			      <a class="ui olive circular label">3</a> jp&nbsp;&nbsp;
-            <a class="ui green circular label">4</a> en<br>
-            </P>
-            원하시는 번호를 입력해 주세요.<br>
+              <div class="speech-bubble">
+              Welcome to Korea. Which language are you comfortable with?<br>
+              <p>
+              <strong>1. 中文</strong><br/>
+              <strong>2. 日本語</strong><br/>
+              <strong>3. English</strong><br/>              
+              </P>
+            </div>
+            
 
 
           </div>
@@ -61,20 +67,26 @@
   <input id="sampleSelect" type="hidden" value=""/>
   <input id="preData" type="hidden" value=""/>
 	<input id="method" type="hidden" value=""/>
+	<input id="recomKeyword" type="hidden" value=""/>
 
-	<div class="ui fixed bottom borderless sticky action input" style="width:100%;">
+	<div class="ui input" style="width:100%;bottom:0;position:fixed;">
 		<input type="text" id="message" name="message">
-		<button id="chat" class="ui red right borderless submit button">Send</button>	
+		<button id="chatBtn" class="ui red right borderless submit button">Send</button>	
 	</div>
 	
-    </form>
+  </form>
 
 	<!-- Message box -->
 
   <script src="/socket.io/socket.io.js"></script>
 	<script src="https://code.jquery.com/jquery-3.1.1.min.js" integrity="sha256-hVVnYaiADRTO2PzUGmuLJr8BLUSjGIZsDYGmIJLv2b8=" crossorigin="anonymous"></script>
 
-    <script>      
+  <script>
+      function answerNo(){
+        document.getElementById("message").value = "No";        
+        $('#chatBtn').trigger('click');
+      }
+
       var socket = io();      
       var dateN = Date.now();
 
@@ -84,15 +96,17 @@
       $('#chat').on('submit', function(e){
         socket.emit('send message', { userName: $('#name').val(), msg: $('#message').val(), channelId: $('#channel').val(), 
         initSet: $('#initSet').val(), baseCd: $('#baseCd').val(), recomIdx: $('#recomIdx').val(), preData: $('#preData').val(), 
-        method: $('#method').val(), sampleData: $('#sampleData').val(), sampleSelect: $('#sampleSelect').val() });
+        method: $('#method').val(), sampleData: $('#sampleData').val(), sampleSelect: $('#sampleSelect').val(), recomKeyword: $('#recomKeyword').val() });
         $('#message').val("");
         $("#message").focus();
         e.preventDefault();
       });
 
       socket.on('receive message', function(msg){
-        $('#chatLog').append(msg+'<br>');                
-        $(document).scrollTop($('#chatLog')[0].scrollHeight);
+        
+        $('#chatLog').append(msg+'<br>');        
+        $(document).scrollTop(($('#chatLog')[0].scrollHeight+150));
+                
       });
 
       socket.on('change name', function(name){
@@ -115,6 +129,10 @@
 	    socket.on('method', function(method){
         console.log(method);
         $('#method').val(method);
+      });
+
+      socket.on('recom keyword', function(recomKeyword){        
+        $('#recomKeyword').val(recomKeyword);
       });
 
       socket.on('sample data', function(sampleData){        
